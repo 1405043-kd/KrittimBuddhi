@@ -1,0 +1,7 @@
+import pandas as pd
+
+#data = pd.read_csv('E:/43/ML_off/telco-customer-churn/WA_Fn-UseC_-Telco-Customer-Churn.csv')
+
+#print(data.columns)
+
+#print(data.shape)
