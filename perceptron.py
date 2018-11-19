@@ -2,7 +2,7 @@ import pandas as pd
 
 weights_1f = [0.1, 0.1, 0.1, 0.1]
 weights_2f = [0.1, 0.1, 0.1]
-
+weights_4f = [0.1, 0.1, 0.1, 0.1, 0.1]
 
 # print(data.iloc[0])
 
@@ -25,22 +25,28 @@ def predict(row, weight):
 def trainer_basic(train, weights, l_rate, iterations):
     # weights = [0.0 for i in range(len(train[0]))]
     for itrn in range(iterations):
-
+        mis_classifieds = {}
+        mis_classified_no = 0
         sumt = 0
         for index, row in train.iterrows():
             # rowlen=len(row)
 
             prediction = predict(row, weights)
             error = row[len(row) - 1] - prediction
+            #print(error)
+            if error != 0:
+                mis_classifieds[mis_classified_no] = row
+                mis_classifieds[mis_classified_no]['class_e'] = error
+                mis_classified_no += 1
 
-            for i in range(len(row) - 1):
-                # weights[i] = weights[i] + l_rate*error*row[i]
-                sumt += error * row[i]
+            # for i in range(len(row) - 1):
+            # weights[i] = weights[i] + l_rate*error*row[i]
+            # sumt += error * row[i]
 
-        weights[len(weights) - 1] = weights[len(weights) - 1] + l_rate * sumt
-
-        for i in range(len(row) - 1):
-            weights[i] = weights[i] + l_rate * sumt
+        for row_miss in mis_classifieds:
+            weights[len(weights) - 1] = weights[len(weights) - 1] + l_rate * mis_classifieds[row_miss]['class_e']
+            for i in range(len(mis_classifieds[row_miss]) - 1):
+                weights[i] = weights[i] + l_rate * mis_classifieds[row_miss][i] * mis_classifieds[row_miss]['class_e']
 
         print(weights)
     return weights
@@ -99,7 +105,7 @@ def predictor_on_dataset(data, weights):
         #   preRes=1
         # print ("Out: ",prediction,  row[len(row)-1]==prediction)
         if row[len(row) - 1] != prediction:
-            mis_classified[falseCount]=row
+            mis_classified[falseCount] = row
             falseCount += 1
     return mis_classified
 
@@ -108,14 +114,14 @@ def predictor_on_dataset(data, weights):
 def add_dict(d1, d2):
     d3 = {}
     for i in d1:
-        d3[i]=d1[i]+d2[i]
+        d3[i] = d1[i] + d2[i]
     return d3
 
 
 def sub_dict(d1, d2):
     d3 = {}
     for i in d1:
-        d3[i]=d1[i]-d2[i]
+        d3[i] = d1[i] - d2[i]
     return d3
 
 
@@ -141,7 +147,7 @@ def kesler_train(data, iterations):
         weights[c] = {}
         for f in range(n_feature - 1):
             weights[c][f] = 0
-    #print(weights)
+    # print(weights)
     # print()
 
     for itrt in range(iterations):
@@ -167,8 +173,8 @@ def kesler_train(data, iterations):
 
 
 def kesler_predict(data, kesler_weights):
-    mis_classified={}
-    mis_count=0
+    mis_classified = {}
+    mis_count = 0
     n_feature = len(data.columns)
     n_class = len(data[n_feature - 1].unique())
 
@@ -183,43 +189,65 @@ def kesler_predict(data, kesler_weights):
             # print(confidence)
             if confidence > y:
                 y = confidence
-                yy = c+1
-        print ("prediction: ", yy, " label_actual: ", row[n_feature - 1], yy==row[n_feature - 1])
-        if yy!=row[n_feature - 1]:
-            mis_classified[mis_count]=row
-            mis_count+=1
+                yy = c + 1
+        print("prediction: ", yy, " label_actual: ", row[n_feature - 1], yy == row[n_feature - 1])
+        if yy != row[n_feature - 1]:
+            mis_classified[mis_count] = row
+            mis_count += 1
     return mis_classified
 
-
-
-
-
-#-------------------------kesler----------------
-
-data = pd.read_fwf('E:/43/Pattern_off/Train.txt', sep="  ", header=None)
-kesler_weights = kesler_train(data, 100)
-data = pd.read_fwf('E:/43/Pattern_off/Test.txt', sep="  ", header=None)
-mis_classified_kesler=(kesler_predict(data, kesler_weights))
-print("mis_classifieds: ", (mis_classified_kesler))
-print("mis_classifieds num: ", len(mis_classified_kesler))
-
-
-#-------------------------kesler----------------
+#
+# # -------------------------kesler----------------
+#
+# data = pd.read_fwf('F:/43/Pattern_off/eval/kesler/Train.txt', sep="  ", header=None)
+# kesler_weights = kesler_train(data, 100)
+# data = pd.read_fwf('F:/43/Pattern_off/eval/kesler/Test.txt', sep="  ", header=None)
+# mis_classified_kesler=(kesler_predict(data, kesler_weights))
+# print("mis_classifieds: ", (mis_classified_kesler))
+# print("mis_classifieds num: ", len(mis_classified_kesler))
+#
+#
+# # -------------------------kesler----------------
 
 
 # print (data)
-#-------------------------First_3_Variants----------------
 
-#data = pd.read_fwf('E:/43/Pattern_off/Train_binary.txt', sep=" ", header=None)
 
-#weights = trainer_r_p(data, weights_1f, .1, 10)
+# -------------------------First_3_Variants----------------
+#
 
-#weights = trainer_pocket(data, weights_1f, .001, 10)
 
-#weights = trainer_pocket(data, weights_1f, 5, 10)
 
-#data = pd.read_fwf('E:/43/Pattern_off/Test_binary.txt', sep=" ", header=None)
-#mis_classified = predictor_on_dataset(data, weights)
-#print("miss_classified ",mis_classified)
-#print(len(mis_classified))
-#-------------------------First_3_Variants----------------
+#data = pd.read_fwf('F:/43/Pattern_off/eval/perceptron/trainLinearlySeparable.txt', delimiter="  ", header=None)
+
+with open ('F:/43/Pattern_off/eval/perceptron/trainLinearlySeparable.txt') as f:
+#with open('F:/43/Pattern_off/eval/perceptron/trainLinearlyNonSeparable.txt') as f:
+    data = []
+    for line in f:
+        #print(line)
+        data.append([float(x) for x in line.split()])
+
+data= pd.DataFrame(data)
+#print(data)
+#weights = trainer_basic(data, weights_4f, 1, 1000)
+
+weights = trainer_r_p(data, weights_4f, 1, 10)
+
+#weights = trainer_pocket(data, weights_4f, .1, 10)
+
+#data = pd.read_fwf('F:/43/Pattern_off/eval/perceptron/testLinearlySeparable.txt', sep=" ", header=None)
+with open ('F:/43/Pattern_off/eval/perceptron/testLinearlySeparable.txt') as f:
+#with open('F:/43/Pattern_off/eval/perceptron/trainLinearlyNonSeparable.txt') as f:
+    data = []
+    for line in f:
+        #print(line)
+        data.append([float(x) for x in line.split()])
+
+data= pd.DataFrame(data)
+
+mis_classified = predictor_on_dataset(data, weights)
+print("miss_classified ", mis_classified)
+print(len(mis_classified))
+
+
+# -------------------------First_3_Variants----------------
