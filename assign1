@@ -67,12 +67,12 @@ def max_information_gain(data):
     #Entropy_att = []
     keys = data.keys()[:-1]
     entropy_data = entropy_dataset(data)
-    print(entropy_data)
+    # print(entropy_data)
     IG = []
     for key in keys:
         IG.append(entropy_data-entropy_attribute(data,key))
-        print(IG)
-    print(keys[np.argmax(IG)])
+        # print(IG)
+    return (keys[np.argmax(IG)])
 
 
 def get_subtable(df, node, val):
@@ -80,12 +80,17 @@ def get_subtable(df, node, val):
 
 
 def buildTree(df, tree=None):
-    decision_feature = df.keys()[-1]
+    Class = df.keys()[-1]  # To make the code generic, changing target variable class name
+
+    #print(Class)
+    # Here we build our decision tree
+
+    # Get attribute with maximum information gain
     node = max_information_gain(df)
+    #print(node)
 
-    print(node)
-
-    feature_types = np.unique(df[node])
+    # Get distinct value of that attribute e.g Salary is node and Low,Med and High are values
+    attValue = np.unique(df[node])
 
     # Create an empty dictionary to create tree
     if tree is None:
@@ -95,10 +100,12 @@ def buildTree(df, tree=None):
     # We make loop to construct a tree by calling this function recursively.
     # In this we check if the subset is pure and stops if it is pure.
 
-    for f_t in feature_types:
+    for value in attValue:
 
-        subtable = get_subtable(df, node, f_t)
+        subtable = get_subtable(df, node, value)
+        # print(subtable, "subtable")
         clValue, counts = np.unique(subtable['Eat'], return_counts=True)
+        # print(clValue, "clValue", counts, "Counts")
 
         if len(counts) == 1:  # Checking purity of subset
             tree[node][value] = clValue[0]
@@ -108,5 +115,21 @@ def buildTree(df, tree=None):
     return tree
 
 
+def predict(inst, tree):
+
+    for nodes in tree.keys():
+
+        value = inst[nodes]
+        tree = tree[nodes][value]
+        prediction = 0
+
+        if type(tree) is dict:
+            prediction = predict(inst, tree)
+        else:
+            prediction = tree
+            break;
+
+    return prediction
+
 tree = buildTree(df)
-print(tree)
+print(predict(df.iloc[5],tree))
