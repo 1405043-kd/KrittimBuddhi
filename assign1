@@ -80,8 +80,8 @@ def get_subtable(df, node, val):
 
 
 def buildTree(df, tree=None):
+    decisionStub=1
     Class = df.keys()[-1]  # To make the code generic, changing target variable class name
-
     #print(Class)
     # Here we build our decision tree
 
@@ -110,7 +110,10 @@ def buildTree(df, tree=None):
         if len(counts) == 1:  # Checking purity of subset
             tree[node][value] = clValue[0]
         else:
-            tree[node][value] = buildTree(subtable)  # Calling the function recursively
+            if decisionStub==1:
+                tree[node][value] = clValue[np.argmax(counts)]
+            else:
+                tree[node][value] = buildTree(subtable)  # Calling the function recursively
 
     return tree
 
@@ -131,5 +134,50 @@ def predict(inst, tree):
 
     return prediction
 
-tree = buildTree(df)
-print(predict(df.iloc[5],tree))
+def normalizer_hand(arr):
+    maximum=max(arr)
+    print(maximum)
+    minimum=min(arr)
+    return_arr ={}
+    if maximum-minimum==0:
+        return arr
+    for i in range(len(arr)):
+        return_arr[i]=arr[i]-minimum/(maximum-minimum)
+    return return_arr
+
+
+
+def adaboost(data, k):
+    n=len(data) #number of samples
+    w = [1/n]*n #weight vector inititalize korlam
+    print(normalizer_hand(w))
+
+    h={} #save the hypotheses space
+    z={} #save weights for each hypothesis
+    # print(z)
+
+    for i in range(k):
+        h[i]=buildTree(data)
+        error=0
+        for j in range(n):
+            hypothesis_prediction=predict(data.iloc[j], h[i])
+            if hypothesis_prediction!=data['Eat'][j]:
+                error=error+w[j]
+                #print(error)
+        if error>0.5:
+            continue
+        for j in range(n):
+            hypothesis_prediction = predict(data.iloc[j], h[i])
+            if hypothesis_prediction==data['Eat'][j]:
+                w[j]=w[j]*(error/1-error)
+        normalizer_hand(w)
+        print(w)
+        z[i]=w
+
+
+
+adaboost(df,3)
+
+
+# tree = buildTree(df)
+# print(predict(df.iloc[5],tree))
