@@ -1,5 +1,6 @@
 import pandas as pd
 import numpy as np
+from sklearn.model_selection import train_test_split
 
 dvz_handler=0.00000000000001
 
@@ -10,6 +11,47 @@ dataset = {'Taste': ['Salty', 'Spicy', 'Spicy', 'Spicy', 'Spicy', 'Sweet', 'Salt
 
 df = pd.DataFrame(dataset, columns=['Taste', 'Temperature', 'Texture', 'Eat'])
 
+def churn_telco_preprocessor():
+    df = pd.read_csv('E:/43/ML_off/telco-customer-churn/WA_Fn-UseC_-Telco-Customer-Churn.csv')
+    df = df.drop('customerID', 1)
+    features=df.keys()
+
+
+    for f in features:
+        if len(df[f].unique())>5:
+            #print(f)
+            df = binarization_by_entropy(df, f)
+            print(np.unique(df[f], return_counts=True))
+
+    # df.to_csv('Cherno_processed.csv', sep=',', encoding='utf-8')
+    df.to_pickle('churn_pickled')
+    return df
+
+
+    #print(entropy_attribute(df, 'MonthlyCharges'))
+
+    # df=(binarization_by_entropy(df, 'TotalCharges'))
+
+
+    # print(df.TotalCharges.value_counts())
+    # print("Column headings:")
+    #print(list(df))
+
+def fraud_preprocessor():
+    df = pd.read_csv('E:/43/ML_off/creditcardfraud/creditcard.csv')
+    df = df.drop('Time', 1)
+    features=df.keys()
+
+
+    for f in features:
+        if len(df[f].unique())>5:
+            #print(f)
+            df = binarization_by_entropy(df, f)
+            print(np.unique(df[f], return_counts=True))
+
+    df.to_csv('fraud_processed.csv', sep=',', encoding='utf-8')
+    return df
+
 # print (len(df), "fffffffffffffffffff")
 # data = pd.read_csv('E:/43/ML_off/telco-customer-churn/WA_Fn-UseC_-Telco-Customer-Churn.csv')
 
@@ -17,16 +59,33 @@ df = pd.DataFrame(dataset, columns=['Taste', 'Temperature', 'Texture', 'Eat'])
 
 # print(data.shape)
 
-entropy_node = 0  # Initialize Entropy
-values = df.Eat.unique()
-# print(values)
-# print(df.Eat.value_counts()['No'])
-for value in values:
-    fraction = df.Eat.value_counts()[value] / len(df.Eat)
-    entropy_node += -fraction * np.log2(fraction)
+# entropy_node = 0  # Initialize Entropy
+# values = df.Eat.unique()
+# # print(values)
+# # print(df.Eat.value_counts()['No'])
+# for value in values:
+#     fraction = df.Eat.value_counts()[value] / len(df.Eat)
+#     entropy_node += -fraction * np.log2(fraction)
 # print(entropy_node)
 
 #print(df.keys()[-1])
+
+def binarization_by_entropy(df, feature):
+    sorted_feature_values=df[feature].sort_values().unique()
+    max_entropy=-100
+    best_df=df.copy(deep=True)
+    #print(sorted_feature_values)
+    for value in sorted_feature_values:
+        temp_df=df.copy(deep=True)
+        temp_df[feature] = (np.where(temp_df[feature]>=value,1,0))
+        #print(temp_df[feature])
+        temp_entropy=entropy_attribute(temp_df, feature)
+        if temp_entropy>max_entropy and len(temp_df[feature].unique())>1:
+            max_entropy=temp_entropy
+            best_df=temp_df.copy(deep=True)
+            #print(max_entropy)
+    return best_df
+
 
 
 # entropy ber korar jonno function lihtesi ekta..pandas e dataframe ar feature er naam pathaile oitar jonno entropy diye dibe
@@ -35,7 +94,7 @@ def entropy_attribute(data, feature):
     decision_types=data[decision_feature].unique()
 
     feature_types=data[feature].unique()
-
+    #print(len(feature_types))
     entropy = 0
     for f_t in feature_types:
         e_temp=0
@@ -104,7 +163,7 @@ def buildTree(df, tree=None):
 
         subtable = get_subtable(df, node, value)
         # print(subtable, "subtable")
-        clValue, counts = np.unique(subtable['Eat'], return_counts=True)
+        clValue, counts = np.unique(subtable[list(df)[-1]], return_counts=True)
         # print(clValue, "clValue", counts, "Counts")
 
         if len(counts) == 1:  # Checking purity of subset
@@ -145,6 +204,12 @@ def normalizer_hand(arr):
         return_arr[i]=arr[i]-minimum/(maximum-minimum)
     return return_arr
 
+def resample(data, weight):
+    data['weight_resamp']=weight
+    data = data[(data['weight_resamp'] > 0.3)]
+    data = data.drop('weight_resamp', 1)
+    return data
+
 
 
 def adaboost(data, k):
@@ -157,27 +222,44 @@ def adaboost(data, k):
     # print(z)
 
     for i in range(k):
+        data=resample(data, w)
         h[i]=buildTree(data)
         error=0
         for j in range(n):
             hypothesis_prediction=predict(data.iloc[j], h[i])
-            if hypothesis_prediction!=data['Eat'][j]:
+            if hypothesis_prediction!=data.iloc[:,-1][j]:
                 error=error+w[j]
                 #print(error)
         if error>0.5:
             continue
         for j in range(n):
             hypothesis_prediction = predict(data.iloc[j], h[i])
-            if hypothesis_prediction==data['Eat'][j]:
+            if hypothesis_prediction==data.iloc[:,-1][j]:
                 w[j]=w[j]*(error/1-error)
         normalizer_hand(w)
-        print(w)
+        # print(w)
         z[i]=w
+    print(z)
+    print(h)
+
+print(df)
+we=[.1,.1,.1,.1,.1,.1,.1,.1,.1,.1]
+print(resample(df, we))
+
+# df = churn_telco_preprocessor()
+#df = pd.read_pickle('churn_pickled')
+#train, test = train_test_split(df, test_size=0.2)
 
 
+#adaboost(train,3)
+#print(list(df)[-1])
+# tree = buildTree(train)
+# print(tree)
 
-adaboost(df,3)
+# print(len(test), 'test')
+# print(len(train), 'train')
+
+# print(predict(test.iloc[100],tree))
 
 
-# tree = buildTree(df)
-# print(predict(df.iloc[5],tree))
+# fraud_preprocessor()
