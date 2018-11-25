@@ -1,3 +1,5 @@
+import random
+
 import pandas as pd
 import numpy as np
 from sklearn.model_selection import train_test_split
@@ -37,20 +39,70 @@ def churn_telco_preprocessor():
     # print("Column headings:")
     #print(list(df))
 
+def census_preprocessor():
+    with open('E:/43/ML_off/dataset_2.txt') as f:
+        # with open('F:/43/Pattern_off/eval/perceptron/trainLinearlyNonSeparable.txt') as f:
+        data = []
+        for line in f:
+            # print(line)
+            data.append([x for x in line.split(',')])
+
+    data = pd.DataFrame(data)
+    data = data.replace('\n', '', regex=True)
+    data = data.replace(' ', None, regex=True)
+
+    # s = pd.Series(data[0])
+    # pd.to_numeric(s)
+    # pd.to_numeric(s, errors='ignore')
+    # pd.to_numeric(s, errors='coerce')
+    # s.convert_objects(convert_numeric=True)
+    # data[0] = data[0].astype(float).fillna(0.0)
+    # data=binarization_by_entropy(data, 0)
+
+    data[12] = data[12].astype(float).fillna(0.0)
+    data = binarization_by_entropy(data, 12)
+
+
+    print(data)
+
+    # data = binarization_by_entropy(data, 2)
+    # data = binarization_by_entropy(data, 4)
+    # data = binarization_by_entropy(data, 10)
+    # data = binarization_by_entropy(data, 10)
+    # data = binarization_by_entropy(data, 11)
+    # data = binarization_by_entropy(data, 12)
+    # # print(binarization_by_entropy(data, 0))
+    # print(np.unique(data[2], return_counts=True))
+    # print(data)
+    # print(data[1].dtype)
+
+
 def fraud_preprocessor():
     df = pd.read_csv('E:/43/ML_off/creditcardfraud/creditcard.csv')
     df = df.drop('Time', 1)
-    features=df.keys()
 
+
+    dff_a = df[df['Class'] == 1].reset_index(drop=True)
+    dff_b = df.sample(n=10000)
+
+    bigdata = dff_b.append(dff_a, ignore_index=True)
+
+
+    # print(bigdata)
+    features = bigdata.keys()
+
+    print(features)
 
     for f in features:
-        if len(df[f].unique())>5:
-            #print(f)
-            df = binarization_by_entropy(df, f)
-            print(np.unique(df[f], return_counts=True))
+        if len(bigdata[f].unique())>5:
+            print(f)
+            bigdata = binarization_by_entropy(bigdata, f)
+            print(np.unique(bigdata[f], return_counts=True))
 
-    df.to_csv('fraud_processed.csv', sep=',', encoding='utf-8')
-    return df
+    bigdata.to_pickle('fraud_pickled')
+    #
+    # df.to_csv('fraud_processed.csv', sep=',', encoding='utf-8')
+    return bigdata
 
 # print (len(df), "fffffffffffffffffff")
 # data = pd.read_csv('E:/43/ML_off/telco-customer-churn/WA_Fn-UseC_-Telco-Customer-Churn.csv')
@@ -70,12 +122,15 @@ def fraud_preprocessor():
 
 #print(df.keys()[-1])
 
+
 def binarization_by_entropy(df, feature):
     sorted_feature_values=df[feature].sort_values().unique()
     max_entropy=-100
     best_df=df.copy(deep=True)
     #print(sorted_feature_values)
-    for value in sorted_feature_values:
+    # for value in sorted_feature_values:
+    for i in range(len(sorted_feature_values)-1):
+        value =(sorted_feature_values[i]+sorted_feature_values[i+1])/2.0
         temp_df=df.copy(deep=True)
         temp_df[feature] = (np.where(temp_df[feature]>=value,1,0))
         #print(temp_df[feature])
@@ -134,12 +189,13 @@ def max_information_gain(data):
     return (keys[np.argmax(IG)])
 
 
-def get_subtable(df, node, val):
+def get_subtable(dfa, node, val):
+    df=dfa.copy(deep=True)
     return df[df[node] == val].reset_index(drop=True)
 
 
 def buildTree(df, tree=None):
-    decisionStub=1
+    decisionStub=2
     Class = df.keys()[-1]  # To make the code generic, changing target variable class name
     #print(Class)
     # Here we build our decision tree
@@ -195,71 +251,128 @@ def predict(inst, tree):
 
 def normalizer_hand(arr):
     maximum=max(arr)
-    print(maximum)
+    # print(maximum, "max")
     minimum=min(arr)
+    # print(minimum, "min")
     return_arr ={}
-    if maximum-minimum==0:
-        return arr
     for i in range(len(arr)):
-        return_arr[i]=arr[i]-minimum/(maximum-minimum)
+        n = arr[i]-minimum
+        # print(n, "n")
+        d=maximum-minimum+dvz_handler
+        # print(d, "d")
+        return_arr[i]=n/d
+        # print(return_arr[i], "i")
+        # print(return_arr[i])
+    # print(return_arr)
     return return_arr
 
-def resample(data, weight):
-    data['weight_resamp']=weight
-    data = data[(data['weight_resamp'] > 0.3)]
-    data = data.drop('weight_resamp', 1)
+def resample(dt, weight):
+    thrdh=(max(weight)-min(weight))/2.0
+    # print(thrdh)
+    data=dt.copy(deep=True)
+    se = pd.Series(weight)
+    data.insert(loc=0, column='new_column', value=se)
+    # data['weight']=se.values
+    data = data[(data['new_column'] >=thrdh)]
+    # print(data)
+    data = data.drop('new_column', 1)
+    # print(len(data))
     return data
 
 
 
 def adaboost(data, k):
+    data_a=data.copy(deep=True)
+
     n=len(data) #number of samples
+    # print(n)
     w = [1/n]*n #weight vector inititalize korlam
-    print(normalizer_hand(w))
+    # print(w)
+    # resample(data, w)
+    # print(normalizer_hand(w))
 
     h={} #save the hypotheses space
     z={} #save weights for each hypothesis
     # print(z)
 
     for i in range(k):
-        data=resample(data, w)
-        h[i]=buildTree(data)
+        data_r=resample(data_a, w).copy()
+        h[i]=buildTree(data_r)
+        value = h[i][list(h[i].keys())[0]]
+        print(value)
+        if len(value)==0:
+            break
+        # print(h[i])
         error=0
         for j in range(n):
+            # print(n)
+            # print(len(data))
             hypothesis_prediction=predict(data.iloc[j], h[i])
-            if hypothesis_prediction!=data.iloc[:,-1][j]:
+            # print(hypothesis_prediction)
+            # print(data.iloc[j][-1])
+            # print(data['Churn'][j])
+            # if hypothesis_prediction!=data[data.columns[-1]][j]:
+            if hypothesis_prediction!=data.iloc[j][-1]:
+                # print("WHAT")
                 error=error+w[j]
-                #print(error)
-        if error>0.5:
-            continue
+        # print(error)
+        # if error>0.5:
+        #     print('damn!')
+        #     continue
         for j in range(n):
             hypothesis_prediction = predict(data.iloc[j], h[i])
-            if hypothesis_prediction==data.iloc[:,-1][j]:
+            # if hypothesis_prediction==data[data.columns[-1]][j]:
+            if hypothesis_prediction != data.iloc[j][-1]:
+                # print(error)
                 w[j]=w[j]*(error/1-error)
-        normalizer_hand(w)
+                # print(w[j])
         # print(w)
-        z[i]=w
-    print(z)
-    print(h)
 
-print(df)
-we=[.1,.1,.1,.1,.1,.1,.1,.1,.1,.1]
-print(resample(df, we))
+        x=normalizer_hand(w)
+        w=x.copy()
 
-# df = churn_telco_preprocessor()
-#df = pd.read_pickle('churn_pickled')
-#train, test = train_test_split(df, test_size=0.2)
+        # print(w)
+        z[i]=-np.log((error+dvz_handler)/(1-error+dvz_handler))
+        # print(z[i])
+    return (h[np.argmax(z)])
 
 
-#adaboost(train,3)
-#print(list(df)[-1])
+
+
+
+
+
+
+census_preprocessor()
+
+# # df=fraud_preprocessor()
+# #
+# # print(df)
+#
+# # df = pd.read_pickle('fraud_pickled')
+#
+# # print(df)
+#
+# # # print(df)
+# # # we=[.1,.1,.1,.1,.1,.1,.1,.1,.1,.1]
+# # # print(resample(df, we))
+# #
+# # # df = churn_telco_preprocessor()
+# df = pd.read_pickle('churn_pickled')
+# train, test = train_test_split(df, test_size=0.2)
+# #
+# #
+# # tree = adaboost(train,10)
+# # #print(list(df)[-1])
 # tree = buildTree(train)
 # print(tree)
-
-# print(len(test), 'test')
-# print(len(train), 'train')
-
-# print(predict(test.iloc[100],tree))
-
-
-# fraud_preprocessor()
+# #
+# # # print(len(test), 'test')
+# # # print(len(train), 'train')
+# #
+# # print (tree)
+# #
+# # # print(predict(test.iloc[0],tree))
+# #
+# #
+# # # fraud_preprocessor()
