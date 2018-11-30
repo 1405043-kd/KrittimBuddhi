@@ -186,6 +186,9 @@ def max_information_gain(data):
     for key in keys:
         IG.append(entropy_data-entropy_attribute(data,key))
         # print(IG)
+
+    if len(IG)==0:
+        return None
     return (keys[np.argmax(IG)])
 
 
@@ -199,10 +202,11 @@ def buildTree(df, tree=None):
     Class = df.keys()[-1]  # To make the code generic, changing target variable class name
     #print(Class)
     # Here we build our decision tree
-
     # Get attribute with maximum information gain
     node = max_information_gain(df)
-    #print(node)
+    print(node)
+    if node==None:
+        return tree
 
     # Get distinct value of that attribute e.g Salary is node and Low,Med and High are values
     attValue = np.unique(df[node])
@@ -228,7 +232,9 @@ def buildTree(df, tree=None):
             if decisionStub==1:
                 tree[node][value] = clValue[np.argmax(counts)]
             else:
-                tree[node][value] = buildTree(subtable)  # Calling the function recursively
+                st = subtable.copy(deep=True)
+                st = st.drop([node], axis=1)
+                tree[node][value] = buildTree(st)  # Calling the function recursively
 
     return tree
 
@@ -316,9 +322,10 @@ def adaboost(data, k):
                 # print("WHAT")
                 error=error+w[j]
         # print(error)
-        # if error>0.5:
+        if error>0.5:
         #     print('damn!')
-        #     continue
+             continue
+
         for j in range(n):
             hypothesis_prediction = predict(data.iloc[j], h[i])
             # if hypothesis_prediction==data[data.columns[-1]][j]:
@@ -340,10 +347,15 @@ def adaboost(data, k):
 
 
 
+def accuracy(tree, testData):
+    cou=0
+    for i in range(len(testData)):
+        # if testData.iloc[i][-1]==predict(testData.iloc[i], tree):
+        if testData.iloc[i][-1] == predict(testData.iloc[i], tree):
+            cou+=1
+    print(cou/len(testData), "accuracy")
 
-
-
-census_preprocessor()
+# census_preprocessor()
 
 # # df=fraud_preprocessor()
 # #
@@ -358,21 +370,30 @@ census_preprocessor()
 # # # print(resample(df, we))
 # #
 # # # df = churn_telco_preprocessor()
-# df = pd.read_pickle('churn_pickled')
-# train, test = train_test_split(df, test_size=0.2)
-# #
+df = pd.read_pickle('churn_pickled')
+train, test = train_test_split(df, test_size=0.2)
+#
+# print(train)
+# # #
 # #
 # # tree = adaboost(train,10)
 # # #print(list(df)[-1])
-# tree = buildTree(train)
-# print(tree)
+
+# print(len(test))
+tree = buildTree(train)
+print(tree)
+
+accuracy(tree, test)
 # #
 # # # print(len(test), 'test')
 # # # print(len(train), 'train')
 # #
 # # print (tree)
 # #
-# # # print(predict(test.iloc[0],tree))
+# print(predict(test.iloc[2],tree))
+
+# print(test.iloc[6][-1]==predict(test.iloc[6], tree))
+
 # #
 # #
 # # # fraud_preprocessor()
