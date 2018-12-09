@@ -1,9 +1,9 @@
 import pandas as pd
 import numpy as np
-from scipy import linalg as LA
 from scipy.stats import multivariate_normal as mn
 from matplotlib import pyplot as MPL
 from mpl_toolkits.mplot3d import Axes3D
+from scipy import linalg as LA
 
 
 def read_data(name):
@@ -29,28 +29,26 @@ def read_data(name):
     return data
 
 
-def PCA(data, dims_rescaled_data=2):
-    from scipy import linalg as LA
-    m, n = data.shape
+def PCA(data, dimension=2):
     data -= data.mean(axis=0)
     R = np.cov(data, rowvar=False)
     evals, evecs = LA.eigh(R)
     idx = np.argsort(evals)[::-1]
     evecs = evecs[:, idx]
     evals = evals[idx]
-    evecs = evecs[:, :dims_rescaled_data]
-    return np.dot(evecs.T, data.T).T, evecs
+    evecs = evecs[:, :dimension]
+    return np.dot(evecs.T, data.T).T
 
 
-def plot_pca(data_resc):
+def plot_pca(data_pca):
     # from matplotlib import pyplot as MPL
     clr1 = '#2026B2'
     # fig = MPL.figure()
     # ax1 = fig.add_subplot(111)
     #
-    # # print(data_resc)
-    # ax1.plot(data_resc[:, 0], data_resc[:, 1],'.', c=clr1)
-    MPL.scatter(data_resc[:, 0], data_resc[:, 1], c=clr1)
+    # # print(data_pca)
+    # ax1.plot(data_pca[:, 0], data_pca[:, 1],'.', c=clr1)
+    MPL.scatter(data_pca[:, 0], data_pca[:, 1], c=clr1)
     MPL.show()
 
 
@@ -106,53 +104,58 @@ def log_li(dataSet, wks, Mu, Sigma):
 
 
 # print(data)
-# print(log_li(data_resc, wk, mu, sig))
-# print(Nk(mu[0], sig[0], data_resc[0, :]))
+# print(log_li(data_pca, wk, mu, sig))
+# print(Nk(mu[0], sig[0], data_pca[0, :]))
 
 # rv= mn(mu[0], sig[0])
-# print(rv.pdf(data_resc[0, :]))
+# print(rv.pdf(data_pca[0, :]))
 
-# p_ik=E(data_resc, wk, mu, sig)
+# p_ik=E(data_pca, wk, mu, sig)
 
-# print(M(data_resc, wk, mu, sig, p_ik))
+# print(M(data_pca, wk, mu, sig, p_ik))
 # for itr in range(100):
 
 
 data = read_data('data.txt')
-data_resc, data_orig = PCA(data)
-no_of_cluster = 3
+data_pca = PCA(data)
+plot_pca(data_pca)
 
-plot_pca(data_resc)
 
-mu = np.random.randint(min(data_resc[:, 0]), max(data_resc[:, 0]), size=(no_of_cluster, len(
-    data_resc[0])))
+clusters = 3
 
-sig = np.zeros((no_of_cluster, len(data_resc[0]), len(data_resc[0])))
+
+
+mu = np.random.randint(min(data_pca[:, 0]), max(data_pca[:, 0]), size=(clusters, len(
+    data_pca[0])))
+
+sig = np.zeros((clusters, len(data_pca[0]), len(data_pca[0])))
 
 for dim in range(len(sig)):
-    np.fill_diagonal(sig[dim], 7)
-wk = np.ones(no_of_cluster) / no_of_cluster
+    np.fill_diagonal(sig[dim], 1)
+wk = np.ones(clusters) / clusters
 p_ik = []
 
 log_likelihood_first = 0
 
-for i in range(100):
-    p_ik = E(data_resc, wk, mu, sig)
-    wk, mu, sig = M(data_resc, wk, mu, sig, p_ik)
-    log_likelihood_second = log_li(data_resc, wk, mu, sig)
+for i in range(1000):
+    p_ik = E(data_pca, wk, mu, sig)
+    wk, mu, sig = M(data_pca, wk, mu, sig, p_ik)
+    log_likelihood_second = log_li(data_pca, wk, mu, sig)
 
     colors = []
     for j in range(len(p_ik)):
         colors.append(np.argmax(p_ik[j]))
-    MPL.scatter(data_resc[:, 0], data_resc[:, 1], c=colors)
-    MPL.pause(0.000005)
+    MPL.scatter(data_pca[:, 0], data_pca[:, 1], c=colors)
+    MPL.pause(0.0001)
 
-    if (abs(log_likelihood_second - log_likelihood_first) < 0.000000009):
+    if abs(log_likelihood_second - log_likelihood_first) < 0.0000009:
         print("Converged")
         break
     log_likelihood_first = log_likelihood_second
     print(log_likelihood_second, i)
 
+from collections import Counter
+print(Counter(colors))
 MPL.show()
 
-# print(data_resc)
+# print(data_pca)
