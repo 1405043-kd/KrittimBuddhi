@@ -1,33 +1,33 @@
-from sklearn.datasets.samples_generator import make_blobs
-from matplotlib import pyplot as MPL
-import numpy as np
-
-X,Y = make_blobs(cluster_std=1, random_state=40,n_samples=500,centers=3)
-X = np.dot(X,np.random.RandomState(0).randn(2,2))
-
-mu = np.random.randint(min(X[:, 0]), max(X[:, 0]), size=(3, len(
-    X[0])))
-print(mu)
-print(X[0])
-print(X[1,:])
-
-# # print(Y)
-# fig = MPL.figure()
-# ax1 = fig.add_subplot(111)
-# clr1 = '#2026B2'
-# ax1.plot(X[:, 0], X[:, 1], '.', mfc=clr1, mec=clr1)
-# MPL.show()
+# from sklearn.datasets.samples_generator import make_blobs
+# from matplotlib import pyplot as MPL
+# import numpy as np
 #
-
-
+# X,Y = make_blobs(cluster_std=1, random_state=40,n_samples=500,centers=3)
+# X = np.dot(X,np.random.RandomState(0).randn(2,2))
+#
 # mu = np.random.randint(min(X[:, 0]), max(X[:, 0]), size=(3, len(
-#             X[0])))
-# cov = np.zeros((3,len(X[0]),len(X[0])))
-# for dim in range(len(cov)):
-#             np.fill_diagonal(cov[dim],5)
-# pi = np.ones(3) / 3
-# print(pi)
-
+#     X[0])))
+# print(mu)
+# print(X[0])
+# print(X[1,:])
+#
+# # # print(Y)
+# # fig = MPL.figure()
+# # ax1 = fig.add_subplot(111)
+# # clr1 = '#2026B2'
+# # ax1.plot(X[:, 0], X[:, 1], '.', mfc=clr1, mec=clr1)
+# # MPL.show()
+# #
+#
+#
+# # mu = np.random.randint(min(X[:, 0]), max(X[:, 0]), size=(3, len(
+# #             X[0])))
+# # cov = np.zeros((3,len(X[0]),len(X[0])))
+# # for dim in range(len(cov)):
+# #             np.fill_diagonal(cov[dim],5)
+# # pi = np.ones(3) / 3
+# # print(pi)
+#
 
 
 
@@ -66,3 +66,9 @@ print(X[1,:])
 # # print(np.dot(w,a)+b)
 
 # print(np.ones(3)/4)
+
+
+initial = [0, 0, 1]
+
+windows = [initial]
+print(initial)

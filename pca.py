@@ -131,7 +131,7 @@ mu = np.random.randint(min(data_pca[:, 0]), max(data_pca[:, 0]), size=(clusters,
 sig = np.zeros((clusters, len(data_pca[0]), len(data_pca[0])))
 
 for dim in range(len(sig)):
-    np.fill_diagonal(sig[dim], 1)
+    np.fill_diagonal(sig[dim], np.random.randint(1,3))
 wk = np.ones(clusters) / clusters
 p_ik = []
 
@@ -146,7 +146,7 @@ for i in range(1000):
     for j in range(len(p_ik)):
         colors.append(np.argmax(p_ik[j]))
     MPL.scatter(data_pca[:, 0], data_pca[:, 1], c=colors)
-    MPL.pause(0.0001)
+    MPL.pause(0.1)
 
     if abs(log_likelihood_second - log_likelihood_first) < 0.0000009:
         print("Converged")
