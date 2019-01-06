@@ -1,6 +1,5 @@
 import csv
 import datetime
-
 import numpy as np
 import math
 import random
@@ -23,8 +22,16 @@ def read_data(name):
 
 
 def get_error(data, u, v, data_w):
-    return np.sum((data_w * (data - np.dot(u, v))) ** 2)
-
+    # return np.sum((data_w * (data - np.dot(u, v))) ** 2)
+    sum = 0
+    counte = 0
+    uv = np.dot(u, v)
+    for i in range(len(data)):
+        for j in range(len(data[0])):
+            if data[i][j]!=99:
+                sum+=((data[i][j]-uv[i][j])**2)
+                counte = counte + 1
+    return math.sqrt(sum/counte)
 
 def flip(p):
     return False if random.random() < p else True
@@ -51,7 +58,8 @@ def train_valid_test(data):
 def recommender_trainer(lambda_, k, loop_count, data, data_w, valid, valid_w):
     u = 3 * np.random.rand(len(data), k)
     v = 3 * np.random.rand(k, len(data[0]))
-    g_err_diff = 0
+    i_k = np.eye(k)
+    err_prev = 0
     fui = u.copy()
     fvi = v.copy()
     users = len(data)
@@ -63,7 +71,7 @@ def recommender_trainer(lambda_, k, loop_count, data, data_w, valid, valid_w):
             temp_b = np.zeros(k)
             # print(temp_b)
             for j in range(items):
-                temp_a_t = np.dot(v[:, j].reshape(k, 1), v[:, j].reshape(k, 1).T) + lambda_ * np.eye(k)
+                temp_a_t = np.dot(v[:, j].reshape(k, 1), v[:, j].reshape(k, 1).T) + lambda_ * i_k
                 temp_a = temp_a + temp_a_t
 
                 if data[i][j] != 99:
@@ -71,7 +79,8 @@ def recommender_trainer(lambda_, k, loop_count, data, data_w, valid, valid_w):
                     temp_b = temp_b.reshape(k, 1) + temp_b_t
                     # print(temp_b)
                 # print(temp_b)
-            u[i, :] = np.linalg.solve(temp_a, temp_b).reshape(1, k)
+            # u[i, :] = np.linalg.solve(temp_a, temp_b)
+            u[i, :] = np.dot(np.linalg.inv(temp_a),temp_b).reshape(1, k)
 
         # print(np.sum(fui-u))
 
@@ -82,7 +91,7 @@ def recommender_trainer(lambda_, k, loop_count, data, data_w, valid, valid_w):
             temp_b = np.zeros(k)
             # print(temp_b)
             for j in range(users):
-                temp_a_t = np.dot(u[j, :].reshape(1, k).T, u[j, :].reshape(1, k)) + lambda_ * np.eye(k)
+                temp_a_t = np.dot(u[j, :].reshape(1, k).T, u[j, :].reshape(1, k)) + lambda_ * i_k
                 temp_a = temp_a + temp_a_t
 
                 if data[j][i] != 99:
@@ -91,17 +100,18 @@ def recommender_trainer(lambda_, k, loop_count, data, data_w, valid, valid_w):
                     # print(temp_b)
                 # print(temp_b)
 
-            v[i, :] = np.linalg.solve(temp_a, temp_b.T).T
+            # v[i, :] = np.linalg.solve(temp_a, temp_b.T).T
+            v[i, :] = np.dot(np.linalg.inv(temp_a), temp_b.T).T
             # print(v[:, i].shape)
         v = v.T
         # print(np.sum(fvi - v))
 
-        temp_err = get_error(data, u, v, data_w)
-        #####print( g_err_diff-temp_err )
+        err_curr = get_error(data, u, v, data_w)
+        print( err_prev-err_curr )
 
-        if abs(temp_err - g_err_diff) < 0.001:
+        if abs((err_prev - err_curr)/err_curr) < 0.001:
             return get_error(valid, u, v, valid_w), u, v
-        g_err_diff = temp_err
+        err_prev = err_curr
 
             # u[i, :] =  np.dot(v[:,j], test[i][j])).T
 
