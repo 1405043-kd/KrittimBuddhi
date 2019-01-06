@@ -127,7 +127,7 @@ def recommender_trainer(lambda_, k, loop_count, data):
         err_curr = get_error(train, u, v)
         print(abs(err_prev - err_curr))
 
-        if abs((err_prev - err_curr) / err_curr) < 0.1:
+        if abs((err_prev - err_curr) / err_curr) < 0.01:
             return u, v
         err_prev = err_curr
 
@@ -194,20 +194,30 @@ def recommender_lk_selector(train, valid, test):
 
     # with open('test.pkl', 'rb') as f:
     #     x = pickle.load(f)
+    return o_l, o_k
 
 
 def rec_eng(test):
-    with open('test.pkl', 'rb') as f:
+    with open('test_best.pkl', 'rb') as f:
         x = pickle.load(f)
     print("test: ", get_error_uv(test, x))
 
 
+def test_with_best(train, validation, l, k):
+    marged_data = marger(train, validation)
+    o_u, o_v = recommender_trainer(l, k, 100000, marged_data)
+    print(get_error(marged_data, o_u, o_v))
+
+    with open('test_best.pkl', 'wb') as ff:
+        pickle.dump(np.dot(o_u, o_v), ff)
+
+
 data = read_data('E:/43/ML_off/ml3/data.csv')
 # train, validation = train_test_split(data, test_size=0.2)
-# train, test = train_test_split(data, test_size=0.998)
+train, test = train_test_split(data, test_size=0.998)
 # print(len(train[0]), len(validation[0]), len(test[9][0]))
 
-train, validation, test = train_valid_test(data)
+train, validation, test = train_valid_test(train)
 
 users = len(validation)
 items = len(validation[0])
@@ -232,6 +242,8 @@ print(users, items)
 # test_w[test_w == 99] = 0
 # test_w[test_w != 0] = 1
 
-recommender_lk_selector(train, validation, test)
+l, k = recommender_lk_selector(train, validation, test)
 # recommender_trainer(lambda_, n_factors, 100, u, v, train, train_w, validation, validation_w)
+
+test_with_best(train, validation, l, k)
 rec_eng(test)
