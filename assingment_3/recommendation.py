@@ -1,5 +1,7 @@
 import csv
 import datetime
+import pickle
+
 import numpy as np
 import math
 import random
@@ -21,7 +23,7 @@ def read_data(name):
     return data_read
 
 
-def get_error(data, u, v, data_w):
+def get_error(data, u, v):
     # return np.sum((data_w * (data - np.dot(u, v))) ** 2)
     sum = 0
     counte = 0
@@ -33,8 +35,19 @@ def get_error(data, u, v, data_w):
                 counte = counte + 1
     return math.sqrt(sum/counte)
 
+def get_error_uv(data, uv):
+    # return np.sum((data_w * (data - np.dot(u, v))) ** 2)
+    sum = 0
+    counte = 0
+    for i in range(len(data)):
+        for j in range(len(data[0])):
+            if data[i][j]!=99:
+                sum+=((data[i][j]-uv[i][j])**2)
+                counte = counte + 1
+    return math.sqrt(sum/counte)
+
 def flip(p):
-    return False if random.random() < p else True
+    return False if np.random.uniform(0, 1) < p else True
 
 
 def train_valid_test(data):
@@ -55,8 +68,9 @@ def train_valid_test(data):
     return train, valid, test
 
 
-def recommender_trainer(lambda_, k, loop_count, data, data_w, valid, valid_w):
-    u = 3 * np.random.rand(len(data), k)
+def recommender_trainer(lambda_, k, loop_count, data, valid):
+    np.random.seed(103)
+    u = 2 * np.random.rand(len(data), k)
     v = 3 * np.random.rand(k, len(data[0]))
     i_k = np.eye(k)
     err_prev = 0
@@ -95,7 +109,7 @@ def recommender_trainer(lambda_, k, loop_count, data, data_w, valid, valid_w):
                 temp_a = temp_a + temp_a_t
 
                 if data[j][i] != 99:
-                    temp_b_t = u[j, :].reshape(1, k) * data[j][i]
+                    temp_b_t = np.multiply(u[j, :].reshape(1, k),data[j][i])
                     temp_b = temp_b.reshape(1, k) + temp_b_t
                     # print(temp_b)
                 # print(temp_b)
@@ -104,13 +118,13 @@ def recommender_trainer(lambda_, k, loop_count, data, data_w, valid, valid_w):
             v[i, :] = np.dot(np.linalg.inv(temp_a), temp_b.T).T
             # print(v[:, i].shape)
         v = v.T
-        # print(np.sum(fvi - v))
+        # print(np.sum(fvi - v), np.sum(fui - u), "u, v")
 
-        err_curr = get_error(data, u, v, data_w)
-        print( err_prev-err_curr )
+        err_curr = get_error(valid, u, v)
+        print( abs(err_prev - err_curr) )
 
-        if abs((err_prev - err_curr)/err_curr) < 0.001:
-            return get_error(valid, u, v, valid_w), u, v
+        if abs((err_prev - err_curr)/err_curr) < 0.01:
+            return err_curr, u, v
         err_prev = err_curr
 
             # u[i, :] =  np.dot(v[:,j], test[i][j])).T
@@ -130,9 +144,9 @@ def recommender_trainer(lambda_, k, loop_count, data, data_w, valid, valid_w):
         # g_err_diff = g_err
 
 
-def recommender_lk_selector(train, train_w, valid, valid_w, test, test_w):
-    l_arr = [0.01, 0.1, 1, 10]
-    k_arr = [5, 10, 20, 40]
+def recommender_lk_selector(train, valid, test):
+    l_arr = [0.1, 0.01, 10, 1]
+    k_arr = [20, 40, 5, 10]
     errors = []
     o_l = 0
     o_k = 0
@@ -140,51 +154,69 @@ def recommender_lk_selector(train, train_w, valid, valid_w, test, test_w):
 
     # print(u.shape)
     # print(v.shape)
-
+    best = 0
     for i in range(len(l_arr)):
         for j in range(len(k_arr)):
-            errr, u, v = recommender_trainer(l_arr[i], k_arr[j], 100000, train, train_w, valid, valid_w)
+            errr, u, v = recommender_trainer(l_arr[i], k_arr[j], 100000, train, valid)
             errors.append(errr)
             if errr<min_error:
+                # print("yaia ", k_arr[j], l_arr[i])
                 min_error=errr
                 o_k = k_arr[j]
                 o_l = l_arr[i]
                 o_u = u
                 o_v = v
+                best = l_arr[i] + k_arr[j]
             with open('file.txt', 'a') as f:
                 print(errors, datetime.datetime.now(), file=f)
     with open('file.txt', 'a') as f:
-        print(errors, get_error(test, o_u, o_v, test_w), o_k, o_l, file=f)
+        print(errors, get_error(test, o_u, o_v), o_k, o_l, best, file=f)
+
+    with open('test.pkl', 'wb') as ff:
+        pickle.dump(np.dot(o_u, o_v), ff)
+
+    # print(np.dot(o_u, o_v))
+
+    # with open('test.pkl', 'rb') as f:
+    #     x = pickle.load(f)
+
+def rec_eng(test):
+    with open('test.pkl', 'rb') as f:
+        x = pickle.load(f)
+    print("test: ", get_error_uv(test, x))
+
 
 data = read_data('E:/43/ML_off/ml3/data.csv')
 # train, validation = train_test_split(data, test_size=0.2)
-# train, test = train_test_split(data, test_size=0.995)
+train, test = train_test_split(data, test_size=0.99)
 # print(len(train[0]), len(validation[0]), len(test[9][0]))
 
-train, validation, test = train_valid_test(data)
+train, validation, test = train_valid_test(train)
 
 users = len(validation)
 items = len(validation[0])
-n_factors = 10
-lambda_ = 2
+
+print(np.sum(train-validation), np.sum(train-test), np.sum(validation-test))
 
 print(users, items)
+#
+# data_w = data.copy()
+# data_w[data_w == 99] = 0
+# data_w[data_w != 0] = 1
+#
+# train_w = train.copy()
+# train_w[train_w == 99] = 0
+# train_w[train_w != 0] = 1
+#
+# validation_w = validation.copy()
+# validation_w[validation_w == 99] = 0
+# validation_w[validation_w != 0] = 1
+#
+# test_w = test.copy()
+# test_w[test_w == 99] = 0
+# test_w[test_w != 0] = 1
 
-data_w = data.copy()
-data_w[data_w == 99] = 0
-data_w[data_w != 0] = 1
-
-train_w = train.copy()
-train_w[train_w == 99] = 0
-train_w[train_w != 0] = 1
-
-validation_w = validation.copy()
-validation_w[validation_w == 99] = 0
-validation_w[validation_w != 0] = 1
-
-test_w = test.copy()
-test_w[test_w == 99] = 0
-test_w[test_w != 0] = 1
-
-recommender_lk_selector(train, train_w, validation, validation_w, test, test_w)
+recommender_lk_selector(train, validation, test)
 # recommender_trainer(lambda_, n_factors, 100, u, v, train, train_w, validation, validation_w)
+
+rec_eng(test)

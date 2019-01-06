@@ -67,8 +67,25 @@
 
 # print(np.ones(3)/4)
 
+#
+# initial = [0, 0, 1]
+#
+# windows = [initial]
+# print(initial)
 
-initial = [0, 0, 1]
-
-windows = [initial]
-print(initial)
+import numpy as np
+# import pickle
+# u =  np.random.rand(10, 3)
+# v =  np.random.rand(3, 10)
+#
+# with open('test.pkl', 'wb') as f:
+#     pickle.dump(np.dot(u,v), f)
+#
+# print(np.dot(u, v))
+#
+# with open('test.pkl','rb') as f:
+#     x = pickle.load(f)
+#     # print(x.shape)
+#     print(u)
+i_k = np.eye(10)
+print(i_k)
