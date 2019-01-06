@@ -30,10 +30,11 @@ def get_error(data, u, v):
     uv = np.dot(u, v)
     for i in range(len(data)):
         for j in range(len(data[0])):
-            if data[i][j]!=99:
-                sum+=((data[i][j]-uv[i][j])**2)
+            if data[i][j] != 99:
+                sum += ((data[i][j] - uv[i][j]) ** 2)
                 counte = counte + 1
-    return math.sqrt(sum/counte)
+    return math.sqrt(sum / counte)
+
 
 def get_error_uv(data, uv):
     # return np.sum((data_w * (data - np.dot(u, v))) ** 2)
@@ -41,10 +42,11 @@ def get_error_uv(data, uv):
     counte = 0
     for i in range(len(data)):
         for j in range(len(data[0])):
-            if data[i][j]!=99:
-                sum+=((data[i][j]-uv[i][j])**2)
+            if data[i][j] != 99:
+                sum += ((data[i][j] - uv[i][j]) ** 2)
                 counte = counte + 1
-    return math.sqrt(sum/counte)
+    return math.sqrt(sum / counte)
+
 
 def flip(p):
     return False if np.random.uniform(0, 1) < p else True
@@ -68,7 +70,7 @@ def train_valid_test(data):
     return train, valid, test
 
 
-def recommender_trainer(lambda_, k, loop_count, data, valid):
+def recommender_trainer(lambda_, k, loop_count, data):
     np.random.seed(103)
     u = 2 * np.random.rand(len(data), k)
     v = 3 * np.random.rand(k, len(data[0]))
@@ -90,11 +92,12 @@ def recommender_trainer(lambda_, k, loop_count, data, valid):
 
                 if data[i][j] != 99:
                     temp_b_t = v[:, j].reshape(k, 1) * data[i][j]
+                    # temp_b_t = np.multiply(v[:, j].reshape(k, 1), data[i][j])
                     temp_b = temp_b.reshape(k, 1) + temp_b_t
                     # print(temp_b)
                 # print(temp_b)
             # u[i, :] = np.linalg.solve(temp_a, temp_b)
-            u[i, :] = np.dot(np.linalg.inv(temp_a),temp_b).reshape(1, k)
+            u[i, :] = np.dot(np.linalg.inv(temp_a), temp_b).reshape(1, k)
 
         # print(np.sum(fui-u))
 
@@ -109,7 +112,8 @@ def recommender_trainer(lambda_, k, loop_count, data, valid):
                 temp_a = temp_a + temp_a_t
 
                 if data[j][i] != 99:
-                    temp_b_t = np.multiply(u[j, :].reshape(1, k),data[j][i])
+                    temp_b_t = u[j, :].reshape(1, k) * data[j][i]
+                    # temp_b_t = np.multiply(u[j, :].reshape(1, k),data[j][i])
                     temp_b = temp_b.reshape(1, k) + temp_b_t
                     # print(temp_b)
                 # print(temp_b)
@@ -120,14 +124,14 @@ def recommender_trainer(lambda_, k, loop_count, data, valid):
         v = v.T
         # print(np.sum(fvi - v), np.sum(fui - u), "u, v")
 
-        err_curr = get_error(valid, u, v)
-        print( abs(err_prev - err_curr) )
+        err_curr = get_error(train, u, v)
+        print(abs(err_prev - err_curr))
 
-        if abs((err_prev - err_curr)/err_curr) < 0.01:
-            return err_curr, u, v
+        if abs((err_prev - err_curr) / err_curr) < 0.01:
+            return u, v
         err_prev = err_curr
 
-            # u[i, :] =  np.dot(v[:,j], test[i][j])).T
+        # u[i, :] =  np.dot(v[:,j], test[i][j])).T
 
         # u = np.linalg.solve(np.dot(v, v.T) + lambda_ * np.eye(n_factors),
         #                     np.dot(v, test.T)).T
@@ -144,6 +148,14 @@ def recommender_trainer(lambda_, k, loop_count, data, valid):
         # g_err_diff = g_err
 
 
+def marger(data1, data2):
+    for i in range(len(data1)):
+        for j in range(len(data1[0])):
+            if data1[i][j] == 99 and data2[i][j] != 99:
+                data1[i][j] = data2[i][j]
+    return data1
+
+
 def recommender_lk_selector(train, valid, test):
     l_arr = [0.1, 0.01, 10, 1]
     k_arr = [20, 40, 5, 10]
@@ -157,11 +169,12 @@ def recommender_lk_selector(train, valid, test):
     best = 0
     for i in range(len(l_arr)):
         for j in range(len(k_arr)):
-            errr, u, v = recommender_trainer(l_arr[i], k_arr[j], 100000, train, valid)
+            u, v = recommender_trainer(l_arr[i], k_arr[j], 100000, train)
+            errr = get_error(valid, u, v)
             errors.append(errr)
-            if errr<min_error:
+            if errr < min_error:
                 # print("yaia ", k_arr[j], l_arr[i])
-                min_error=errr
+                min_error = errr
                 o_k = k_arr[j]
                 o_l = l_arr[i]
                 o_u = u
@@ -169,6 +182,10 @@ def recommender_lk_selector(train, valid, test):
                 best = l_arr[i] + k_arr[j]
             with open('file.txt', 'a') as f:
                 print(errors, datetime.datetime.now(), file=f)
+
+    marged_data = marger(train, valid)
+    o_u, o_v = recommender_trainer(o_l, o_k, 100000, marged_data)
+
     with open('file.txt', 'a') as f:
         print(errors, get_error(test, o_u, o_v), o_k, o_l, best, file=f)
 
@@ -179,6 +196,7 @@ def recommender_lk_selector(train, valid, test):
 
     # with open('test.pkl', 'rb') as f:
     #     x = pickle.load(f)
+
 
 def rec_eng(test):
     with open('test.pkl', 'rb') as f:
@@ -196,9 +214,9 @@ train, validation, test = train_valid_test(train)
 users = len(validation)
 items = len(validation[0])
 
-print(np.sum(train-validation), np.sum(train-test), np.sum(validation-test))
-
+print(np.sum(train - validation), np.sum(train - test), np.sum(validation - test))
 print(users, items)
+
 #
 # data_w = data.copy()
 # data_w[data_w == 99] = 0
@@ -218,5 +236,4 @@ print(users, items)
 
 recommender_lk_selector(train, validation, test)
 # recommender_trainer(lambda_, n_factors, 100, u, v, train, train_w, validation, validation_w)
-
 rec_eng(test)
