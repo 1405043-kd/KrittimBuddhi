@@ -127,7 +127,7 @@ def recommender_trainer(lambda_, k, loop_count, data):
         err_curr = get_error(train, u, v)
         print(abs(err_prev - err_curr))
 
-        if abs((err_prev - err_curr) / err_curr) < 0.01:
+        if abs((err_prev - err_curr) / err_curr) < 0.001:
             return u, v
         err_prev = err_curr
 
@@ -214,10 +214,10 @@ def test_with_best(train, validation, l, k):
 
 data = read_data('E:/43/ML_off/ml3/data.csv')
 # train, validation = train_test_split(data, test_size=0.2)
-train, test = train_test_split(data, test_size=0.998)
+# train, test = train_test_split(data, test_size=0.998)
 # print(len(train[0]), len(validation[0]), len(test[9][0]))
 
-train, validation, test = train_valid_test(train)
+train, validation, test = train_valid_test(data)
 
 users = len(validation)
 items = len(validation[0])
