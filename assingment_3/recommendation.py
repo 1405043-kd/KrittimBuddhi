@@ -127,7 +127,7 @@ def recommender_trainer(lambda_, k, loop_count, data):
         err_curr = get_error(train, u, v)
         print(abs(err_prev - err_curr))
 
-        if abs((err_prev - err_curr) / err_curr) < 0.01:
+        if abs((err_prev - err_curr) / err_curr) < 0.1:
             return u, v
         err_prev = err_curr
 
@@ -177,9 +177,7 @@ def recommender_lk_selector(train, valid, test):
                 min_error = errr
                 o_k = k_arr[j]
                 o_l = l_arr[i]
-                o_u = u
-                o_v = v
-                best = l_arr[i] + k_arr[j]
+                # best = l_arr[i] + k_arr[j]
             with open('file.txt', 'a') as f:
                 print(errors, datetime.datetime.now(), file=f)
 
@@ -187,7 +185,7 @@ def recommender_lk_selector(train, valid, test):
     o_u, o_v = recommender_trainer(o_l, o_k, 100000, marged_data)
 
     with open('file.txt', 'a') as f:
-        print(errors, get_error(test, o_u, o_v), o_k, o_l, best, file=f)
+        print(errors,  o_k, o_l,"Error Train: " ,get_error(marged_data, o_u, o_v),"Error Test: ", get_error(test, o_u, o_v), file=f)
 
     with open('test.pkl', 'wb') as ff:
         pickle.dump(np.dot(o_u, o_v), ff)
@@ -206,10 +204,10 @@ def rec_eng(test):
 
 data = read_data('E:/43/ML_off/ml3/data.csv')
 # train, validation = train_test_split(data, test_size=0.2)
-train, test = train_test_split(data, test_size=0.99)
+# train, test = train_test_split(data, test_size=0.998)
 # print(len(train[0]), len(validation[0]), len(test[9][0]))
 
-train, validation, test = train_valid_test(train)
+train, validation, test = train_valid_test(data)
 
 users = len(validation)
 items = len(validation[0])
